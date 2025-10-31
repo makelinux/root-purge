@@ -4,7 +4,6 @@
 # Supports: Debian/Ubuntu (apt), Fedora/RHEL (dnf), Flatpak, Snap, Docker, Podman
 
 r=$(uname -r)
-k=${r%%-*}  # kernel version without suffix
 age=10  # days to keep files (mtime, atime)
 
 purge_debian() {
