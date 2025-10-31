@@ -28,6 +28,28 @@ purge_debian() {
 	dpkg --list | grep --extended-regexp "linux-(image|headers|source)" | grep --extended-regexp "(^ii|^rc)"
 }
 
+purge_fedora() {
+	command -v dnf > /dev/null || return
+	# Clean all DNF cache
+	sudo dnf clean all
+	sudo rm -rf /var/cache/dnf/*
+
+	# Remove old kernels (keep current + 1 previous)
+	rpm -qa kernel-core | sort -V | head -n -2 | xargs -r sudo dnf remove -y
+
+	echo Cleaning PackageKit cache
+	command -v pkcon > /dev/null && sudo pkcon refresh force -c -1 2> /dev/null
+	sudo rm -rf /var/cache/PackageKit/*
+
+	# Clean ABRT crash data older than 7 days
+	if command -v abrt-cli > /dev/null; then
+		sudo abrt-cli rm --force --since 7 2> /dev/null
+	else
+		# Fallback to manual cleanup if abrt-cli not available
+		sudo find /var/spool/abrt -type d -mtime +7 -exec rm -rf {} \; 2> /dev/null
+	fi
+}
+
 prune_containers() {
 	for cmd in podman docker; do
 		command -v $cmd > /dev/null || continue
@@ -51,10 +73,7 @@ purge_system() {
 	# Package manager cleanup (distro-specific)
 
 	purge_debian
-	if command -v dnf > /dev/null; then
-		# Fedora/RHEL
-		sudo dnf clean dbcache
-	fi
+	purge_fedora
 
 	# Keep only 2 snap revisions
 	sudo snap set system refresh.retain=2 2> /dev/null
