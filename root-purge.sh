@@ -5,6 +5,7 @@
 
 r=$(uname -r)
 k=${r%%-*}  # kernel version without suffix
+age=10  # days to keep files (mtime, atime)
 
 purge_debian() {
 	command -v apt-get > /dev/null || return
@@ -41,9 +42,9 @@ purge_fedora() {
 	command -v pkcon > /dev/null && sudo pkcon refresh force -c -1 2> /dev/null
 	sudo rm -rf /var/cache/PackageKit/*
 
-	# Clean ABRT crash data older than 7 days
+	# Clean ABRT crash data
 	if [ -d /var/spool/abrt ]; then
-		sudo find /var/spool/abrt -mindepth 1 -maxdepth 1 -type d -mtime +7 -exec rm -rf {} \; 2> /dev/null
+		sudo find /var/spool/abrt -mindepth 1 -maxdepth 1 -type d -mtime +$age -exec rm -rf {} \; 2> /dev/null
 	fi
 }
 
@@ -88,10 +89,10 @@ purge_system() {
 	# Journal cleanup - keep 1 day
 	sudo journalctl --vacuum-time=1d
 
-	# Remove old temp/crash files (8+ days)
-	find /tmp /var/tmp /var/crash -type f -atime +8 -delete 2> /dev/null
+	# Remove old temp/crash files
+	sudo find /tmp /var/tmp /var/crash -type f -atime +$age -delete 2> /dev/null
 
-	sudo rm -rf /root/.cache/* 2> /dev/null
+	sudo find /root/.cache -type f -atime +$age -delete 2> /dev/null
 
 	prune_containers
 }
