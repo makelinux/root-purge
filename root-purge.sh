@@ -28,6 +28,25 @@ purge_debian() {
 	dpkg --list | grep --extended-regexp "linux-(image|headers|source)" | grep --extended-regexp "(^ii|^rc)"
 }
 
+prune_containers() {
+	for cmd in podman docker; do
+		command -v $cmd > /dev/null || continue
+
+		echo "Pruning $cmd containers..."
+		# Remove stopped containers
+		$cmd container prune --force 2> /dev/null
+
+		# Remove unused volumes
+		$cmd volume prune --force 2> /dev/null
+
+		# Remove unused networks
+		$cmd network prune --force 2> /dev/null
+
+		# Aggressive cleanup - commented by default
+		# $cmd system prune --all --force --volumes 2> /dev/null
+	done
+}
+
 purge_system() {
 	# Package manager cleanup (distro-specific)
 
@@ -53,6 +72,8 @@ purge_system() {
 
 	# Remove old temp/crash files (8+ days)
 	find /tmp /var/crash -type f -atime +8 -delete 2> /dev/null
+
+	prune_containers
 }
 
 show_status() {
