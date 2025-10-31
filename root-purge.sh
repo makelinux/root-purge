@@ -110,11 +110,7 @@ show_status() {
 		echo $cmd disk usage:
 		$cmd system df 2> /dev/null
 	done
-	sudo du --time --one-file-system / |
-		sort -n | tail -n 20 |
-		while read s n; do
-			echo "$(numfmt --padding=7 --to=iec-i $((1024*s))) $n";
-		done
+	sudo du --one-file-system -xh / 2> /dev/null | sort -h | tail -n 20
 }
 
 main() {
