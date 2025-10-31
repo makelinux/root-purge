@@ -42,11 +42,8 @@ purge_fedora() {
 	sudo rm -rf /var/cache/PackageKit/*
 
 	# Clean ABRT crash data older than 7 days
-	if command -v abrt-cli > /dev/null; then
-		sudo abrt-cli rm --force --since 7 2> /dev/null
-	else
-		# Fallback to manual cleanup if abrt-cli not available
-		sudo find /var/spool/abrt -type d -mtime +7 -exec rm -rf {} \; 2> /dev/null
+	if [ -d /var/spool/abrt ]; then
+		sudo find /var/spool/abrt -mindepth 1 -maxdepth 1 -type d -mtime +7 -exec rm -rf {} \; 2> /dev/null
 	fi
 }
 
