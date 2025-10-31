@@ -50,15 +50,9 @@ purge_fedora() {
 prune_containers() {
 	for cmd in podman docker; do
 		command -v $cmd > /dev/null || continue
-
-		echo "Pruning $cmd containers..."
-		# Remove stopped containers
+		echo Pruning $cmd
 		$cmd container prune --force 2> /dev/null
-
-		# Remove unused volumes
 		$cmd volume prune --force 2> /dev/null
-
-		# Remove unused networks
 		$cmd network prune --force 2> /dev/null
 
 		# Aggressive cleanup - commented by default
