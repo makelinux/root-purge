@@ -84,13 +84,17 @@ purge_system() {
 			sudo snap remove "$s" --revision="$v"
 		done
 
+	sudo rm -rf /var/lib/snapd/cache/* 2> /dev/null
+
 	command -v flatpak > /dev/null && flatpak uninstall --unused --assumeyes
 
 	# Journal cleanup - keep 1 day
 	sudo journalctl --vacuum-time=1d
 
 	# Remove old temp/crash files (8+ days)
-	find /tmp /var/crash -type f -atime +8 -delete 2> /dev/null
+	find /tmp /var/tmp /var/crash -type f -atime +8 -delete 2> /dev/null
+
+	sudo rm -rf /root/.cache/* 2> /dev/null
 
 	prune_containers
 }
