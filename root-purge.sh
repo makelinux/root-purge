@@ -96,11 +96,6 @@ purge_system() {
 }
 
 show_status() {
-	echo "Status:"
-
-	# Show snap cache size
-	command -v snap > /dev/null && sudo du --summarize --human-readable /var/lib/snapd/cache 2> /dev/null
-
 	journalctl --disk-usage 2> /dev/null
 
 	# Show container status if tools exist
