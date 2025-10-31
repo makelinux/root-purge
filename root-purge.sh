@@ -8,9 +8,9 @@ k=${r%%-*}  # kernel version without suffix
 
 purge_debian() {
 	command -v apt-get > /dev/null || return
-	# Remove old kernel packages except the current
-	dpkg --list 'linux-*' | awk '/^ii/ && /'"$k"'/ && !/'"$r"'/ {print $2}' |
-		xargs --no-run-if-empty sudo apt-get --yes remove --purge
+	# Remove old kernel packages (keep current + 1 previous)
+	dpkg --list 'linux-image-*' | awk '/^ii/ {print $2}' | grep -E '[0-9]+\.[0-9]+\.[0-9]+' |
+		sort -V | head -n -2 | xargs --no-run-if-empty sudo apt-get --yes remove --purge
 
 	# Clean orphaned kernel packages
 	command -v aptitude > /dev/null && sudo aptitude --assume-yes purge "~nlinux-image~c"
