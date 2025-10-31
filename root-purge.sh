@@ -10,7 +10,8 @@ purge_debian() {
 	command -v apt-get > /dev/null || return
 	# Remove old kernel packages (keep current + 1 previous)
 	dpkg --list 'linux-image-*' | awk '/^ii/ {print $2}' | grep -E '[0-9]+\.[0-9]+\.[0-9]+' |
-		sort -V | head -n -2 | xargs --no-run-if-empty sudo apt-get --yes remove --purge
+		sort -V | head -n -2 |
+			xargs --no-run-if-empty sudo apt-get --yes remove --purge
 
 	# Clean orphaned kernel packages
 	command -v aptitude > /dev/null && sudo aptitude --assume-yes purge "~nlinux-image~c"
@@ -25,7 +26,8 @@ purge_debian() {
 	sudo apt-get --yes autoremove
 
 	echo Kept kernels:
-	dpkg --list | grep --extended-regexp "linux-(image|headers|source)" | grep --extended-regexp "(^ii|^rc)"
+	dpkg --list | grep --extended-regexp "linux-(image|headers|source)" |
+		grep --extended-regexp "(^ii|^rc)"
 }
 
 purge_fedora() {
@@ -43,7 +45,8 @@ purge_fedora() {
 
 	# Clean ABRT crash data
 	if [ -d /var/spool/abrt ]; then
-		sudo find /var/spool/abrt -mindepth 1 -maxdepth 1 -type d -mtime +$age -exec rm -rf {} \; 2> /dev/null
+		sudo find /var/spool/abrt -mindepth 1 -maxdepth 1 -type d -mtime +$age \
+			-exec rm -rf {} \; 2> /dev/null
 	fi
 }
 
@@ -107,8 +110,8 @@ show_status() {
 		echo $cmd disk usage:
 		$cmd system df 2> /dev/null
 	done
-	sudo du --time --one-file-system / | \
-		sort -n | tail -n 20 | \
+	sudo du --time --one-file-system / |
+		sort -n | tail -n 20 |
 		while read s n; do
 			echo "$(numfmt --padding=7 --to=iec-i $((1024*s))) $n";
 		done
