@@ -117,6 +117,7 @@ show_status() {
 		echo $cmd disk usage:
 		$cmd system df 2> /dev/null
 	done
+	sudo du --time --one-file-system / | sort -n | tail -n 10 | while read s n; do echo $(numfmt --to=iec-i $((1024*s))) $n; done
 }
 
 main() {
