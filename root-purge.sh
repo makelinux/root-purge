@@ -84,9 +84,11 @@ prune_containers() {
 		if [ "$dry_run" ]; then
 			echo "Would prune $cmd containers, volumes, and networks"
 		else
-			$cmd container prune --force 2> /dev/null
-			$cmd volume prune --force 2> /dev/null
-			$cmd network prune --force 2> /dev/null
+			[ "$interactive" ] && force="" || force="--force"
+			# user context
+			$cmd container prune $force 2> /dev/null
+			$cmd volume prune $force 2> /dev/null
+			$cmd network prune $force 2> /dev/null
 		fi
 
 		# Aggressive cleanup - commented by default
