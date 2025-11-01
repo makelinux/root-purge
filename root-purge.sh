@@ -192,8 +192,8 @@ show_help() {
 
 main() {
 	# Handle command line options
-	for arg in "$@"; do
-		case "$arg" in
+	while [ $# -gt 0 ]; do
+		case "$1" in
 			--dry-run|-n)
 				dry_run=1
 				mode=--assumeno
@@ -218,6 +218,7 @@ main() {
 				exit 1
 				;;
 		esac
+		shift
 	done
 
 	purge_system
