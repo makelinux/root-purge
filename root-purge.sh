@@ -4,6 +4,7 @@
 # Supports: Debian/Ubuntu (apt), Fedora/RHEL (dnf), Flatpak, Snap, Docker, Podman
 
 age=10  # days to keep files (mtime, atime)
+keep=2  # number of releases to keep
 dry_run=  # dry run mode (empty for normal, non-empty for dry-run)
 interactive=
 mode=--assumeyes  # default mode for package managers
@@ -22,7 +23,7 @@ purge_debian() {
 		grep --fixed-strings --invert-match "$r" |
 		grep -E '[0-9]+\.[0-9]+\.[0-9]+' |
 		sort --version-sort |
-		head -n -2 |
+		head -n -$keep |
 		xargs --no-run-if-empty sudo apt-get $aptmode remove --purge
 
 	# Clean orphaned kernel packages
@@ -53,8 +54,8 @@ purge_fedora() {
 		sudo dnf clean all
 	fi
 
-	# Remove old kernels (keep current + 1 previous)
-	rpm -qa kernel-core | sort -V | head -n -2 | xargs -r sudo dnf $mode remove
+	# Remove old kernel releases
+	rpm -qa kernel-core | sort -V | head -n -$keep | xargs -r sudo dnf $mode remove
 
 	# Clean PackageKit cache
 	if [ "$dry_run" ]; then
@@ -103,8 +104,8 @@ purge_system() {
 	purge_debian
 	purge_fedora
 
-	# Keep only 2 snap revisions
-	[ "$extra" ] && sudo snap set system refresh.retain=2 2> /dev/null
+	# Limit snap revisions
+	[ "$extra" ] && sudo snap set system refresh.retain=$keep 2> /dev/null
 
 	# Remove disabled snaps in user context
 	if [ "$dry_run" ]; then
@@ -183,10 +184,11 @@ show_status() {
 }
 
 show_help() {
-	echo "Usage: $0 [--dry-run|-n] [--interactive|-i] [--extra|-e] [--help|-h]"
+	echo "Usage: $0 [--dry-run|-n] [--interactive|-i] [--extra|-e] [--keep|-k N] [--help|-h]"
 	echo "  --dry-run, -n     Show what would be done without making changes"
 	echo "  --interactive, -i Let tools prompt for confirmation (no auto-yes)"
 	echo "  --extra, -e       Enable aggressive cleanup operations and configurations"
+	echo "  --keep, -k N      Number of releases to keep (default: 2)"
 	echo "  --help, -h        Show this help message"
 }
 
