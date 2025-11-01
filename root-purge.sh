@@ -36,21 +36,20 @@ purge_debian() {
 purge_fedora() {
 	command -v dnf > /dev/null || return
 	mode=${dry_run:+--assumeno}
-	
+
 	# Clean all DNF cache
-	if [ -n "$dry_run" ]; then
+	if [ "$dry_run" ]; then
 		echo "Would clean DNF cache:"
 		du -sh /var/cache/dnf/* 2> /dev/null || echo "  (empty or inaccessible)"
 	else
 		sudo dnf clean all
-		sudo rm -rf /var/cache/dnf/*
 	fi
 
 	# Remove old kernels (keep current + 1 previous)
 	rpm -qa kernel-core | sort -V | head -n -2 | xargs -r sudo dnf $mode remove -y
 
 	# Clean PackageKit cache
-	if [ -n "$dry_run" ]; then
+	if [ "$dry_run" ]; then
 		echo "Would clean PackageKit cache:"
 		du -sh /var/cache/PackageKit/* 2> /dev/null || echo "  (empty or inaccessible)"
 	else
@@ -60,7 +59,7 @@ purge_fedora() {
 
 	# Clean ABRT crash data
 	if [ -d /var/spool/abrt ]; then
-		if [ -n "$dry_run" ]; then
+		if [ "$dry_run" ]; then
 			echo "Would remove ABRT crash data older than $age days:"
 			find /var/spool/abrt -mindepth 1 -maxdepth 1 -type d -mtime +$age 2> /dev/null |
 				xargs -r ls -ld | sed 's/^/  /'
@@ -75,7 +74,7 @@ prune_containers() {
 	for cmd in podman docker; do
 		command -v $cmd > /dev/null || continue
 		echo Pruning $cmd
-		if [ -n "$dry_run" ]; then
+		if [ "$dry_run" ]; then
 			echo "Would prune $cmd containers, volumes, and networks"
 		else
 			$cmd container prune --force 2> /dev/null
@@ -95,10 +94,10 @@ purge_system() {
 	purge_fedora
 
 	# Keep only 2 snap revisions
-	[ -z "$dry_run" ] && sudo snap set system refresh.retain=2 2> /dev/null
+	[ ! "$dry_run" ] && sudo snap set system refresh.retain=2 2> /dev/null
 
 	# Remove disabled snaps
-	if [ -n "$dry_run" ]; then
+	if [ "$dry_run" ]; then
 		echo "Would remove disabled snaps:"
 		snap list --all 2> /dev/null | awk '/disabled/{print "  - " $1 " (rev " $3 ")"}'
 	else
@@ -109,7 +108,7 @@ purge_system() {
 	fi
 
 	# Clean snap cache
-	if [ -n "$dry_run" ]; then
+	if [ "$dry_run" ]; then
 		echo "Would clean snap cache:"
 		du -sh /var/lib/snapd/cache 2> /dev/null || echo "  (empty or inaccessible)"
 	else
@@ -118,7 +117,7 @@ purge_system() {
 
 	# Clean flatpak
 	if command -v flatpak > /dev/null; then
-		if [ -n "$dry_run" ]; then
+		if [ "$dry_run" ]; then
 			echo "Would remove unused flatpaks"
 		else
 			flatpak uninstall --unused --assumeyes
@@ -126,7 +125,7 @@ purge_system() {
 	fi
 
 	# Journal cleanup - keep 1 day
-	if [ -n "$dry_run" ]; then
+	if [ "$dry_run" ]; then
 		echo "Would vacuum journal (current size):"
 		journalctl --disk-usage 2> /dev/null | sed 's/^/  /'
 	else
@@ -134,7 +133,7 @@ purge_system() {
 	fi
 
 	# Remove old temp/crash files
-	if [ -n "$dry_run" ]; then
+	if [ "$dry_run" ]; then
 		echo "Would remove temp/crash files older than $age days:"
 		find /tmp /var/tmp /var/crash -type f -atime +$age 2> /dev/null | wc -l | xargs echo "  Files:"
 	else
@@ -142,7 +141,7 @@ purge_system() {
 	fi
 
 	# Clean old root cache
-	if [ -n "$dry_run" ]; then
+	if [ "$dry_run" ]; then
 		echo "Would remove root cache files older than $age days:"
 		find /root/.cache -type f -atime +$age 2> /dev/null | wc -l | xargs echo "  Files:"
 	else
@@ -193,7 +192,7 @@ main() {
 				;;
 		esac
 	done
-	
+
 	purge_system
 	show_status
 }
