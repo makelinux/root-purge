@@ -70,7 +70,7 @@ purge_fedora() {
 	# Clean ABRT crash data
 	if [ -d /var/spool/abrt ]; then
 		if [ "$dry_run" ]; then
-			echo "Would remove ABRT crash data older than $age days:"
+			echo "Would remove Automatic Bug Reporting Tool (ABRT) crash data older than $age days:"
 			find /var/spool/abrt -mindepth 1 -maxdepth 1 -type d -mtime +$age 2> /dev/null |
 				xargs -r ls -ld | sed 's/^/  /'
 		else
