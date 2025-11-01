@@ -105,7 +105,7 @@ purge_system() {
 	# Keep only 2 snap revisions
 	[ ! "$dry_run" ] && sudo snap set system refresh.retain=2 2> /dev/null
 
-	# Remove disabled snaps
+	# Remove disabled snaps in user context
 	if [ "$dry_run" ]; then
 		echo "Would remove disabled snaps:"
 		snap list --all 2> /dev/null | awk '/disabled/{print "  - " $1 " (rev " $3 ")"}'
@@ -129,6 +129,7 @@ purge_system() {
 		if [ "$dry_run" ]; then
 			echo "Would remove unused flatpaks"
 		else
+			# user context
 			flatpak uninstall --unused $mode
 		fi
 	fi
