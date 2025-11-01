@@ -100,6 +100,8 @@ prune_containers() {
 }
 
 purge_system() {
+	[ "$EUID" -eq 0 ] && alias sudo=''
+	[ "$keep" -gt 0 ] 2>/dev/null || keep=2
 	# Package manager cleanup (distro-specific)
 
 	purge_debian
