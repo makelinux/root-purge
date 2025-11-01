@@ -62,7 +62,6 @@ purge_fedora() {
 		echo "Would clean PackageKit cache:"
 		du -sh /var/cache/PackageKit/* 2> /dev/null || echo "  (empty or inaccessible)"
 	else
-		command -v pkcon > /dev/null && sudo pkcon refresh force -c -1 2> /dev/null
 		sudo rm -rf /var/cache/PackageKit/*
 	fi
 
