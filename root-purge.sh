@@ -3,7 +3,6 @@
 # System cleanup script - removes old kernels, snaps, logs, and temporary files
 # Supports: Debian/Ubuntu (apt), Fedora/RHEL (dnf), Flatpak, Snap, Docker, Podman
 
-r=$(uname -r)
 age=10  # days to keep files (mtime, atime)
 dry_run=  # dry run mode (empty for normal, non-empty for dry-run)
 interactive=
@@ -16,8 +15,13 @@ purge_debian() {
 	[ ! "$interactive" ] && aptmode="--assume-yes"
 
 	# Remove old kernel packages (keep current + 1 previous)
-	dpkg --list 'linux-image-*' | awk '/^ii/ {print $2}' | grep -E '[0-9]+\.[0-9]+\.[0-9]+' |
-		sort -V | head -n -2 |
+	r=$(uname -r)
+	dpkg --list 'linux-image-*' |
+		awk '/^ii/ {print $2}' |
+		grep --fixed-strings --invert-match "$r" |
+		grep -E '[0-9]+\.[0-9]+\.[0-9]+' |
+		sort --version-sort |
+		head -n -2 |
 		xargs --no-run-if-empty sudo apt-get $aptmode remove --purge
 
 	# Clean orphaned kernel packages
