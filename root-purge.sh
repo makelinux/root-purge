@@ -6,27 +6,31 @@
 r=$(uname -r)
 age=10  # days to keep files (mtime, atime)
 dry_run=  # dry run mode (empty for normal, non-empty for dry-run)
+interactive=
+mode=--assumeyes  # default mode for package managers
 
 purge_debian() {
 	command -v apt-get > /dev/null || return
-	mode=${dry_run:+--simulate}
-	
+	aptmode=""
+	[ "$dry_run" ] && aptmode="--simulate"
+	[ ! "$interactive" ] && aptmode="--assume-yes"
+
 	# Remove old kernel packages (keep current + 1 previous)
 	dpkg --list 'linux-image-*' | awk '/^ii/ {print $2}' | grep -E '[0-9]+\.[0-9]+\.[0-9]+' |
 		sort -V | head -n -2 |
-		xargs --no-run-if-empty sudo apt-get --yes $mode remove --purge
+		xargs --no-run-if-empty sudo apt-get $aptmode remove --purge
 
 	# Clean orphaned kernel packages
-	command -v aptitude > /dev/null && sudo aptitude --assume-yes $mode purge "~nlinux-image~c"
+	command -v aptitude > /dev/null && sudo aptitude $aptmode purge "~nlinux-image~c"
 
 	# Hold current kernel from removal
-	[ -z "$dry_run" ] && echo "linux-image-$r hold" | sudo dpkg --set-selections
+	[ ! "$dry_run" ] && echo "linux-image-$r hold" | sudo dpkg --set-selections
 
 	# Ensure current kernel headers/image installed
-	[ -z "$dry_run" ] && sudo apt-get install --yes "linux-headers-$r" "linux-image-$r" 2> /dev/null
+	[ ! "$dry_run" ] && sudo apt-get install $aptmode "linux-headers-$r" "linux-image-$r" 2> /dev/null
 
-	[ -z "$dry_run" ] && sudo apt-get clean
-	sudo apt-get --yes $mode autoremove
+	[ ! "$dry_run" ] && sudo apt-get clean
+	sudo apt-get $aptmode autoremove
 
 	echo Kept kernels:
 	dpkg --list | grep --extended-regexp "linux-(image|headers|source)" |
@@ -35,7 +39,6 @@ purge_debian() {
 
 purge_fedora() {
 	command -v dnf > /dev/null || return
-	mode=${dry_run:+--assumeno}
 
 	# Clean all DNF cache
 	if [ "$dry_run" ]; then
@@ -46,7 +49,7 @@ purge_fedora() {
 	fi
 
 	# Remove old kernels (keep current + 1 previous)
-	rpm -qa kernel-core | sort -V | head -n -2 | xargs -r sudo dnf $mode remove -y
+	rpm -qa kernel-core | sort -V | head -n -2 | xargs -r sudo dnf $mode remove
 
 	# Clean PackageKit cache
 	if [ "$dry_run" ]; then
@@ -120,7 +123,7 @@ purge_system() {
 		if [ "$dry_run" ]; then
 			echo "Would remove unused flatpaks"
 		else
-			flatpak uninstall --unused --assumeyes
+			flatpak uninstall --unused $mode
 		fi
 	fi
 
@@ -177,12 +180,19 @@ main() {
 		case "$arg" in
 			--dry-run|-n)
 				dry_run=1
+				mode=--assumeno
 				echo "Dry run mode - no changes will be made"
 				;;
+			--interactive|-i)
+				interactive=1
+				mode=""
+				echo "Interactive mode - tools will prompt for confirmation"
+				;;
 			--help|-h)
-				echo "Usage: $0 [--dry-run|-n] [--help|-h]"
-				echo "  --dry-run, -n  Show what would be done without making changes"
-				echo "  --help, -h     Show this help message"
+				echo "Usage: $0 [--dry-run|-n] [--interactive|-i] [--help|-h]"
+				echo "  --dry-run, -n     Show what would be done without making changes"
+				echo "  --interactive, -i Let tools prompt for confirmation (no auto-yes)"
+				echo "  --help, -h        Show this help message"
 				exit 0
 				;;
 			*)
