@@ -7,6 +7,7 @@ age=10  # days to keep files (mtime, atime)
 dry_run=  # dry run mode (empty for normal, non-empty for dry-run)
 interactive=
 mode=--assumeyes  # default mode for package managers
+extra=
 
 purge_debian() {
 	command -v apt-get > /dev/null || return
@@ -81,18 +82,18 @@ prune_containers() {
 	for cmd in podman docker; do
 		command -v $cmd > /dev/null || continue
 		echo Pruning $cmd
+		[ "$interactive" ] && force="" || force="--force"
 		if [ "$dry_run" ]; then
 			echo "Would prune $cmd containers, volumes, and networks"
 		else
-			[ "$interactive" ] && force="" || force="--force"
 			# user context
 			$cmd container prune $force 2> /dev/null
 			$cmd volume prune $force 2> /dev/null
 			$cmd network prune $force 2> /dev/null
 		fi
 
-		# Aggressive cleanup - commented by default
-		# $cmd system prune --all --force --volumes 2> /dev/null
+		# Aggressive cleanup, including unused images
+		[ "$extra" ] && $cmd system prune --all $force --volumes 2> /dev/null
 	done
 }
 
@@ -103,7 +104,7 @@ purge_system() {
 	purge_fedora
 
 	# Keep only 2 snap revisions
-	[ ! "$dry_run" ] && sudo snap set system refresh.retain=2 2> /dev/null
+	[ "$extra" ] && sudo snap set system refresh.retain=2 2> /dev/null
 
 	# Remove disabled snaps in user context
 	if [ "$dry_run" ]; then
@@ -181,6 +182,14 @@ show_status() {
 	sudo du --one-file-system -xh / 2> /dev/null | sort -h | tail -n 20
 }
 
+show_help() {
+	echo "Usage: $0 [--dry-run|-n] [--interactive|-i] [--extra|-e] [--help|-h]"
+	echo "  --dry-run, -n     Show what would be done without making changes"
+	echo "  --interactive, -i Let tools prompt for confirmation (no auto-yes)"
+	echo "  --extra, -e       Enable aggressive cleanup operations and configurations"
+	echo "  --help, -h        Show this help message"
+}
+
 main() {
 	# Handle command line options
 	for arg in "$@"; do
@@ -195,11 +204,12 @@ main() {
 				mode=""
 				echo "Interactive mode - tools will prompt for confirmation"
 				;;
+			--extra|-e)
+				extra=1
+				echo "Extra mode"
+				;;
 			--help|-h)
-				echo "Usage: $0 [--dry-run|-n] [--interactive|-i] [--help|-h]"
-				echo "  --dry-run, -n     Show what would be done without making changes"
-				echo "  --interactive, -i Let tools prompt for confirmation (no auto-yes)"
-				echo "  --help, -h        Show this help message"
+				show_help
 				exit 0
 				;;
 			*)
