@@ -58,11 +58,13 @@ purge_fedora() {
 	rpm -qa kernel-core | sort -V | head -n -$keep | xargs -r sudo dnf $mode remove
 
 	# Clean PackageKit cache
-	if [ "$dry_run" ]; then
-		echo "Would clean PackageKit cache:"
-		du -sh /var/cache/PackageKit/* 2> /dev/null || echo "  (empty or inaccessible)"
-	else
-		sudo rm -rf /var/cache/PackageKit/*
+	if [ "$extra" ]; then
+		if [ "$dry_run" ]; then
+			echo "Would clean PackageKit cache:"
+			du -sh /var/cache/PackageKit/* 2> /dev/null || echo "  (empty or inaccessible)"
+		else
+			sudo rm -rf /var/cache/PackageKit/*
+		fi
 	fi
 
 	# Clean ABRT crash data
